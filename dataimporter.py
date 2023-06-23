@@ -4,11 +4,37 @@ import os
 
 class DataImporter:
 
-    def __init__(self, database):
-        self.db = MySQLdb.connect("localhost", "root", "1234", database)
-        self.databaseName = database
+    def __init__(self):
+        pass
 
-    def load(self):
+    def getDatabasesList(self, database):
+        if database == "PostgreSQL":
+            return self.getPostgreSQLDatabasesList()
+        elif database == "MySQL":
+            return self.getMySQLDatabasesList()
+
+    def getPostgreSQLDatabasesList(self):
+        pass
+
+    def getMySQLDatabasesList(self):
+        self.db = MySQLdb.connect("localhost", "root", "1234")
+        cursor = self.db.cursor()
+        cursor.execute("SHOW DATABASES")
+        databases = cursor.fetchall()
+        databasesList = []
+
+        for database in databases:
+            databasesList.append(database[0])
+            
+        cursor.close()
+        self.db.close()
+
+        return databasesList
+
+
+    def load(self, databaseName):
+        self.db = MySQLdb.connect("localhost", "root", "1234", databaseName)
+
         cursor = self.db.cursor()
         cursor.execute("SHOW TABLES")
         table_names = [table[0] for table in cursor.fetchall()]
@@ -18,7 +44,7 @@ class DataImporter:
             results = cursor.fetchall()
 
             column_names = [description[0] for description in cursor.description]
-            path = "csv/" + self.databaseName
+            path = "csv/" + databaseName
 
             if not os.path.exists(path) :
                 os.makedirs(path)
@@ -34,3 +60,6 @@ class DataImporter:
                 
                 # Escrever os dados
                 writer.writerows(results)
+
+        cursor.close()
+        self.db.close()

@@ -1,4 +1,6 @@
-from dataimporter import*
+from app import*
 
-importer = DataImporter("university")
-importer.load()
+app = App()
+
+while True:
+    app.run()
