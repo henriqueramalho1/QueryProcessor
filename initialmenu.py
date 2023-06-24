@@ -15,3 +15,5 @@ class InitialMenu(State):
         if(option == "1"):
             from dataimportmenu import DataImportMenu
             self.app.changeState(DataImportMenu(self.app))
+        elif(option == "3"):
+            self.app.stop()
