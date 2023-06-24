@@ -10,12 +10,12 @@ class DataImportMenu(State):
         print("Selecione o banco de dados:")
         print("1 - MySQL")
         print("2 - PostgreSQL")
-        print("3 - Voltar\n")
+        print("3 - Sair\n")
 
         option = input()
 
         if(option == "1"):
-            self.app.changeState(DatabasesMenu(self.app, "MySQL"))
+            self.app.changeState(InitialMenu(self.app, "MySQL"))
 
         elif(option == "3"):
-            self.app.changeState(InitialMenu(self.app))
+            self.app.stop()

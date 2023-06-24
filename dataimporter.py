@@ -1,4 +1,4 @@
-import MySQLdb
+import mysql.connector
 import csv
 import os
 
@@ -17,7 +17,13 @@ class DataImporter:
         pass
 
     def getMySQLDatabasesList(self):
-        self.db = MySQLdb.connect("localhost", "root", "1234")
+
+        try:
+            self.db = mysql.connector.connect(user="root", host="localhost", password="fran3828")
+
+        except:
+            return []
+
         cursor = self.db.cursor()
         cursor.execute("SHOW DATABASES")
         databases = cursor.fetchall()
@@ -33,7 +39,7 @@ class DataImporter:
 
 
     def load(self, databaseName):
-        self.db = MySQLdb.connect("localhost", "root", "1234", databaseName)
+        self.db = mysql.connector.connect(user="root", host="localhost", password="fran3828", database=databaseName)
 
         cursor = self.db.cursor()
         cursor.execute("SHOW TABLES")

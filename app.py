@@ -1,9 +1,9 @@
-from initialmenu import InitialMenu
+from dataimportmenu import DataImportMenu
 
 class App:
 
     def __init__(self):
-        self.state = InitialMenu(self)
+        self.state = DataImportMenu(self)
         self.quit = False
 
     def changeState(self, newState):
