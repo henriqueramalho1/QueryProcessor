@@ -1,5 +1,5 @@
-import re
 import csv
+
 class QueryProcessor:
 
     def __init__(self, database):

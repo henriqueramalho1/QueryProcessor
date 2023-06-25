@@ -31,4 +31,4 @@ class DatabasesMenu(State):
                 databaseName = databaseName.split("-")
                 importer.load(databaseName[0])
             except:
-                print("Deu merda na conexão com o banco")
+                print("Não foi possível carregar os dados")

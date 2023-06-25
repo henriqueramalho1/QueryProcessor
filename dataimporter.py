@@ -19,7 +19,7 @@ class DataImporter:
     def getMySQLDatabasesList(self):
 
         try:
-            self.db = mysql.connector.connect(user="root", host="localhost", password="fran3828")
+            self.db = mysql.connector.connect(user="root", host="localhost", password="1234")
 
         except:
             return []
@@ -39,7 +39,7 @@ class DataImporter:
 
 
     def load(self, databaseName):
-        self.db = mysql.connector.connect(user="root", host="localhost", password="fran3828", database=databaseName)
+        self.db = mysql.connector.connect(user="root", host="localhost", password="1234", database=databaseName)
 
         cursor = self.db.cursor()
         cursor.execute("SHOW TABLES")
