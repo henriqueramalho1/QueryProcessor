@@ -145,8 +145,16 @@ class QueryProcessor:
         return words[index]
 
     def print_table(self, data_table):
-        for row in data_table:
-            print(row)
+        num_colunas = len(data_table[0])
+        lengths = [max(len(str(dado)) for dado in coluna) for coluna in zip(*data_table)]
+
+        print("+" + "+".join("-" * (length + 2) for length in lengths) + "+")
+
+        for linha in data_table:
+            for dado, length in zip(linha, lengths):
+                print(f"| {str(dado):<{length}} ", end="")
+            print("|")
+            print("+" + "+".join("-" * (length + 2) for length in lengths) + "+")
 
     def get_table_name(self, words):
         index = -1
