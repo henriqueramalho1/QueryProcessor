@@ -36,9 +36,19 @@ class QueryProcessor:
         return data_table
 
     def select(self, data_table, words):
+        filtered_field = []
+        comparison_field = []
+        comparison_type = []
+
+        has_where = False
+        if 'where' in words or 'WHERE' in words:
+            filtered_field = self.get_filtered_column(words)
+            comparison_field = self.get_comparison_field(words)
+            comparison_type = self.get_comparison_type(words)
+            has_where = True
 
         columns = self.get_selected_columns(words)
-        selected_data_table = []
+        selected_data = []
 
         selected_indexes = []
         for i, line in enumerate(data_table):
@@ -53,10 +63,61 @@ class QueryProcessor:
                 else:
                     if selected_indexes[j]:
                         line_mod.append(line[j])
+            # Salva registro
+            if has_where and i != 0:
+                column_i = self.get_column_index(filtered_field, data_table[0])
+                data1 = line[column_i]
+                # Pode ser dado avulso ou dado de um campo
+                # data2 = words[c_index]
+                data2 = comparison_field
+                if self.compare(data1, comparison_type, data2):
+                    selected_data.append(line_mod)
+            else:
+                selected_data.append(line_mod)
 
-            selected_data_table.append(line_mod)
+        return selected_data
 
-        return selected_data_table
+
+    def get_column_index(self, column, column_names):
+        index = []
+        for i, col in enumerate(column_names):
+            if column == col:
+                return i
+        return -1
+
+    def compare(self, field1, comparison_type, field2):
+        comp_operators = ['=', '!=', '<', '>', '<=', '>=']
+
+        logical_operators = ['or', 'OR', 'and', 'AND']
+        if comparison_type in comp_operators:
+            if comparison_type == '=':
+                comparison_type = '=='
+            result = eval(f"field1 {comparison_type} field2")
+            return result
+
+
+    def get_comparison_type(self,words):
+        index = []
+        for i, word in enumerate(words):
+            if word == 'where' or word == 'WHERE':
+                index = i + 2
+                break
+        return words[index]
+    def get_comparison_field(self, words):
+        index = []
+        for i, word in enumerate(words):
+            if word == 'where' or word == 'WHERE':
+                index = i + 3
+                break
+        return words[index]
+
+    def get_filtered_column(self, words):
+        index = []
+        for i, word in enumerate(words):
+            if word == 'where' or word == 'WHERE':
+                index = i + 1
+                break
+        return words[index]
 
     def print_table(self, data_table):
         for row in data_table:
