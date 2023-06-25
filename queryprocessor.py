@@ -6,11 +6,18 @@ class QueryProcessor:
         self.database = database
 
     def processQuery(self, databaseName, query):
-        words = query.replace(',', ' ').replace('(', ' ').replace(')', ' ').replace('\'', ' ').split()
+        words = query.replace(',', ' ').replace('(', ' ').replace(')', ' ').replace('\'', ' ').replace('\"', ' ').split()
         file_name = []
 
         if 'update' in words or 'UPDATE' in words:
-            pass
+            file_name = 'csv/' + str(databaseName) + '/' + words[1].lower() + ".csv"
+            data = self.get_data(file_name)
+            fields_to_update = self.get_updated_fields(words)
+            selected_data = self.select(data, words, '*')
+            fields_to_update_indexes = self.get_columns_indexes(fields_to_update, selected_data.pop(0))
+            values = self.get_updated_values(words)
+            indexes = self.get_csv_rows_indexes(selected_data, file_name)
+            self.update_fields(file_name, fields_to_update_indexes, values, indexes)
 
         if 'insert' in words or 'INSERT' in words:
             file_name = 'csv/' + str(databaseName) + '/' + self.get_insert_table(words).lower() + ".csv"
@@ -84,6 +91,62 @@ class QueryProcessor:
                 selected_data.append(line_mod)
 
         return selected_data
+
+    def get_columns_indexes(self, columns, column_names):
+        indexes = []
+        for i, column in enumerate(columns):
+            for j, col in enumerate(column_names):
+                if col == column:
+                    indexes.append(j)
+
+        return indexes
+
+    def update_fields(self, file_name, fields_to_update_indexes, values, indexes):
+        rows = []
+        updated_rows = []
+        with open(file_name, 'r') as csvfile:
+            reader = csv.reader(csvfile, delimiter=';')
+            rows = list(reader)
+
+        for idx, row in enumerate(rows):
+            if idx + 1 in indexes:
+                updated_row = []
+                for j, field in enumerate(row):
+                    if j in fields_to_update_indexes:
+                        updated_row.append(values[fields_to_update_indexes.index(j)])
+                    else:
+                        updated_row.append(field)
+                updated_rows.append(updated_row)
+
+        with open(file_name, 'w', newline='') as new_csvfile:
+            writer = csv.writer(new_csvfile, delimiter=';')
+            i = 0
+            for idx, row in enumerate(rows):
+                if idx + 1 not in indexes:
+                    writer.writerow(row)
+                else:
+                    writer.writerow(updated_rows[i])
+                    i += 1
+
+    def get_updated_fields(self, words):
+        fields = []
+        for i, word in enumerate(words):
+            if word == 'where' or word == 'WHERE':
+                return fields
+            if word == '=':
+                fields.append(words[i - 1])
+
+        return fields
+
+    def get_updated_values(self, words):
+        values = []
+        for i, word in enumerate(words):
+            if word == 'where' or word == 'WHERE':
+                return values
+            if word == '=':
+                values.append(words[i + 1])
+
+        return values
 
     def delete_rows(self, indexes, file_name):
         rows = []
