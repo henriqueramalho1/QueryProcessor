@@ -6,11 +6,18 @@ class QueryProcessor:
         self.database = database
 
     def processQuery(self, databaseName, query):
-        words = query.replace(',', ' ').replace('(', ' ').replace(')', ' ').replace('\'', ' ').split()
+        words = query.replace(',', ' ').replace('(', ' ').replace(')', ' ').replace('\'', ' ').replace('\"', ' ').split()
         file_name = []
 
         if 'update' in words or 'UPDATE' in words:
-            pass
+            file_name = 'csv/' + str(databaseName) + '/' + words[1].lower() + ".csv"
+            data = self.get_data(file_name)
+            fields_to_update = self.get_updated_fields(words)
+            selected_data = self.select(data, words, '*')
+            fields_to_update_indexes = self.get_columns_indexes(fields_to_update, selected_data.pop(0))
+            values = self.get_updated_values(words)
+            indexes = self.get_csv_rows_indexes(selected_data, file_name)
+            self.update_fields(file_name, fields_to_update_indexes, values, indexes)
 
         if 'insert' in words or 'INSERT' in words:
             file_name = 'csv/' + str(databaseName) + '/' + self.get_insert_table(words).lower() + ".csv"
@@ -52,16 +59,29 @@ class QueryProcessor:
         return data_table
 
     def select(self, data_table, words, selected_columns):
-        filtered_field = []
-        comparison_field = []
-        comparison_type = []
-
+        filtered_fields = []
+        comparison_fields = []
+        comparison_types = []
+        ordered_by = []
         has_where = False
+        has_modifiers = False
+        has_order_by = False
+        order_desc = False
+
         if 'where' in words or 'WHERE' in words:
-            filtered_field = self.get_filtered_column(words)
-            comparison_field = self.get_comparison_field(words)
-            comparison_type = self.get_comparison_type(words)
+            filtered_fields = self.get_filtered_columns(words)
+            comparison_fields = self.get_comparison_fields(words)
+            comparison_types = self.get_comparison_types(words)
+            comparison_modifiers = self.get_comparison_modifiers(words)
+            if len(comparison_modifiers) != 0:
+                has_modifiers = True
             has_where = True
+
+        if ('order' in words and 'by' in words) or ('ORDER' in words and 'BY' in words):
+            ordered_by = self.get_ordered_field(words)
+            has_order_by = True
+            if 'desc' in words or 'DESC' in words:
+                order_desc = True
 
         selected_data = []
 
@@ -80,17 +100,106 @@ class QueryProcessor:
                         line_mod.append(line[j])
             # Salva registro
             if has_where and i != 0:
-                column_i = self.get_column_index(filtered_field, data_table[0])
-                data1 = line[column_i]
-                # Pode ser dado avulso ou dado de um campo
-                # data2 = words[c_index]
-                data2 = comparison_field
-                if self.compare(data1, comparison_type, data2):
+                comparison_results = []
+                for idx, filters in enumerate(filtered_fields):
+                    column_i = self.get_column_index(filtered_fields[idx], data_table[0])
+                    data1 = line[column_i]
+                    data2 = comparison_fields[idx]
+                    comparison_type = comparison_types[idx]
+                    result = self.compare(data1, comparison_type, data2)
+                    comparison_results.append(result)
+
+                if has_modifiers:
+                    final_result = self.compare(comparison_results[0], comparison_modifiers[0], comparison_results[1])
+                    for j in range(2, len(comparison_results)):
+                        final_result = self.compare(final_result, comparison_modifiers[j - 1], comparison_results[j])
+
+                    if final_result:
+                        selected_data.append(line_mod)
+
+                elif comparison_results[0]:
                     selected_data.append(line_mod)
             else:
                 selected_data.append(line_mod)
 
+        if has_order_by:
+            ordered_field_index = self.get_column_index(ordered_by, data_table[0])
+            sorted_data = sorted(selected_data[1:], key=lambda x: self.convert_type(x[ordered_field_index]), reverse= order_desc)
+            sorted_data = [selected_data[0]] + sorted_data
+            return sorted_data
+
         return selected_data
+
+    def convert_type(self, item):
+        field = item  # Index of the field to sort by (quantity in this case)
+        try:
+            field_value = float(field)  # Attempt to convert to an integer
+        except ValueError:
+            field_value = field  # Keep the value as is if it cannot be converted to an integer
+
+        return field_value
+
+    def get_ordered_field(self, words):
+        for i, word in enumerate(words):
+            if word == 'by' or word == 'BY':
+               return words[i + 1]
+
+
+    def get_columns_indexes(self, columns, column_names):
+        indexes = []
+        for i, column in enumerate(columns):
+            for j, col in enumerate(column_names):
+                if col == column:
+                    indexes.append(j)
+
+        return indexes
+
+    def update_fields(self, file_name, fields_to_update_indexes, values, indexes):
+        rows = []
+        updated_rows = []
+        with open(file_name, 'r') as csvfile:
+            reader = csv.reader(csvfile, delimiter=';')
+            rows = list(reader)
+
+        for idx, row in enumerate(rows):
+            if idx + 1 in indexes:
+                updated_row = []
+                for j, field in enumerate(row):
+                    if j in fields_to_update_indexes:
+                        updated_row.append(values[fields_to_update_indexes.index(j)])
+                    else:
+                        updated_row.append(field)
+                updated_rows.append(updated_row)
+
+        with open(file_name, 'w', newline='') as new_csvfile:
+            writer = csv.writer(new_csvfile, delimiter=';')
+            i = 0
+            for idx, row in enumerate(rows):
+                if idx + 1 not in indexes:
+                    writer.writerow(row)
+                else:
+                    writer.writerow(updated_rows[i])
+                    i += 1
+
+    def get_updated_fields(self, words):
+        fields = []
+        for i, word in enumerate(words):
+            if word == 'where' or word == 'WHERE':
+                return fields
+            if word == '=':
+                fields.append(words[i - 1])
+
+        return fields
+
+    def get_updated_values(self, words):
+        values = []
+        for i, word in enumerate(words):
+            if word == 'where' or word == 'WHERE':
+                return values
+            if word == '=':
+                values.append(words[i + 1])
+
+        return values
 
     def delete_rows(self, indexes, file_name):
         rows = []
@@ -149,53 +258,46 @@ class QueryProcessor:
         return -1
 
     def compare(self, field1, comparison_type, field2):
-        field1 = float(field1)
-        field2 = float(field2)
-        if comparison_type == '=':
-            if field1 == field2:
-                return True
-        elif comparison_type == '!=':
-            if field1 != field2:
-                return True
-        elif comparison_type == '=':
-            if field1 == field2:
-                return True
-        elif comparison_type == '>':
-            if field1 > field2:
-                return True
-        elif comparison_type == '<':
-            if field1 < field2:
-                return True
-        elif comparison_type == '>=':
-            if field1 >= field2:
-                return True
-        elif comparison_type == '<=':
-            if field1 <= field2:
-                return True
-        return False
+        field1 = self.convert_type(field1)
+        field2 = self.convert_type(field2)
+        if (comparison_type == '='):
+            comparison_type = '=='
+        return eval(f'field1 {comparison_type} field2')
 
-    def get_comparison_type(self,words):
-        index = []
+    def get_comparison_modifiers(self, words):
+        mods = []
         for i, word in enumerate(words):
-            if word == 'where' or word == 'WHERE':
-                index = i + 2
-                break
-        return words[index]
-    def get_comparison_field(self, words):
-        index = []
-        for i, word in enumerate(words):
-            if word == 'where' or word == 'WHERE':
-                index = i + 3
-                break
-        return words[index]
+            if word == 'and' or word == 'AND':
+                mods.append(word.lower())
+            elif word == 'or' or word == 'OR':
+                mods.append(word.lower())
+        return mods
 
-    def get_filtered_column(self, words):
-        index = []
+    def get_comparison_types(self,words):
+        types = []
         for i, word in enumerate(words):
             if word == 'where' or word == 'WHERE':
-                index = i + 1
-                break
-        return words[index]
+                types.append(words[i + 2])
+            elif word == 'and' or word == 'AND' or word == 'or' or word == 'OR':
+                types.append(words[i + 2])
+        return types
+    def get_comparison_fields(self, words):
+        comparisons = []
+        for i, word in enumerate(words):
+            if word == 'where' or word == 'WHERE':
+                comparisons.append(words[i + 3])
+            elif word == 'and' or word == 'AND' or word == 'or' or word == 'OR':
+                comparisons.append(words[i + 3])
+        return comparisons
+
+    def get_filtered_columns(self, words):
+        columns = []
+        for i, word in enumerate(words):
+            if word == 'where' or word == 'WHERE':
+                columns.append(words[i + 1])
+            elif word == 'and' or word == 'AND' or word == 'or' or word == 'OR':
+                columns.append(words[i + 1])
+        return columns
 
     def print_table(self, data_table):
         lengths = [max(len(str(dado)) for dado in column) for column in zip(*data_table)]
