@@ -328,9 +328,11 @@ class QueryProcessor:
         return columns
     
     def join_tables_using(self, table1, table2, key):
+        
         result_table = []
-        table1_key_index = table1[0].index(key)
-        table2_key_index = table2[0].index(key)
+
+        table1_key_index = table1[0].index(key[0])
+        table2_key_index = table2[0].index(key[0])
 
         result_table.append(table1[0] + table2[0])
 
