@@ -145,14 +145,13 @@ class QueryProcessor:
         return words[index]
 
     def print_table(self, data_table):
-        num_colunas = len(data_table[0])
-        lengths = [max(len(str(dado)) for dado in coluna) for coluna in zip(*data_table)]
+        lengths = [max(len(str(dado)) for dado in column) for column in zip(*data_table)]
 
         print("+" + "+".join("-" * (length + 2) for length in lengths) + "+")
 
-        for linha in data_table:
-            for dado, length in zip(linha, lengths):
-                print(f"| {str(dado):<{length}} ", end="")
+        for row in data_table:
+            for data, length in zip(row, lengths):
+                print(f"| {str(data):<{length}} ", end="")
             print("|")
             print("+" + "+".join("-" * (length + 2) for length in lengths) + "+")
 
