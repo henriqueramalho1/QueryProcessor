@@ -6,14 +6,16 @@ class QueryProcessor:
         self.database = database
 
     def processQuery(self, databaseName, query):
-        words = query.replace(',', ' ').split()
+        words = query.replace(',', ' ').replace('(', ' ').replace(')', ' ').replace('\'', ' ').split()
         file_name = 'csv/' + str(databaseName) + '/' + self.get_table_name(words).lower() + ".csv"
 
         if 'update' in words or 'UPDATE' in words:
             pass
 
         if 'insert' in words or 'INSERT' in words:
-            pass
+            file_name = 'csv/' + str(databaseName) + '/' + self.get_insert_table(words).lower() + ".csv"
+            new_row = self.get_row_values(words)
+            self.write_new_row(file_name, new_row)
 
         if 'delete' in words or 'DELETE' in words:
             pass
@@ -77,6 +79,29 @@ class QueryProcessor:
 
         return selected_data
 
+    def write_new_row(self, file_name, values):
+        with open(file_name, 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile, delimiter=';')
+            writer.writerow(values)
+
+    def get_row_values(self, words):
+        values = []
+        start = False
+        for i, word in enumerate(words):
+            if start:
+                values.append(word)
+            if word == 'values' or word == 'VALUES':
+                start = True
+
+        return values
+
+    def get_insert_table(self,words):
+        index = []
+        for i, word in enumerate(words):
+            if word == 'insert' or word == 'INSERT':
+                index = i + 2
+                break
+        return words[index]
 
     def get_column_index(self, column, column_names):
         index = []
