@@ -21,7 +21,10 @@ class QueryMenu(State):
             else:
                 print()
                 processor = QueryProcessor(self.database)
-                processor.processQuery(self.database, query)
+                try:
+                    processor.processQuery(self.database, query)
+                except:
+                    pass
         
         from loadeddatabasesmenu import LoadedDatabasesMenu
         self.app.changeState(LoadedDatabasesMenu(self.app))

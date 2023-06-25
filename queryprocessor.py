@@ -26,8 +26,15 @@ class QueryProcessor:
             self.delete_rows(indexes, file_name)
 
         if 'select' in words or 'SELECT' in words:
-            file_name = 'csv/' + str(databaseName) + '/' + self.get_table_name(words).lower() + ".csv"
-            data = self.get_data(file_name)
+            file_name = ''
+            data = []
+
+            if 'join' in words or 'JOIN' in words:
+                data = self.join(words, databaseName)
+            else:
+                file_name = 'csv/' + str(databaseName) + '/' + self.get_table_name(words).lower() + ".csv"
+                data = self.get_data(file_name)
+
             columns = self.get_selected_columns(words)
             selected_data = self.select(data, words, columns)
             self.print_table(selected_data)
@@ -217,3 +224,122 @@ class QueryProcessor:
                 break
             columns.append(elem)
         return columns
+    
+    def join_tables_using(self, table1, table2, key):
+        result_table = []
+        table1_key_index = table1[0].index(key)
+        table2_key_index = table2[0].index(key)
+
+        result_table.append(table1[0] + table2[0])
+
+        for line_table1 in table1[1:]:
+            key_value = line_table1[table1_key_index]
+            matching_rows = []
+
+            for line_table2 in table2[1:]:
+                if line_table2[table2_key_index] == key_value:
+                    matching_rows.append(line_table2)
+
+            if matching_rows:
+                for matching_row in matching_rows:
+                    result_table.append(line_table1 + matching_row)
+
+        return result_table
+    
+    def join_tables_on(self, table1, table2, condition):
+        
+        result_table = []
+
+        field1 = condition[0].split('.')[1]
+        field2 = condition[2].split('.')[1]
+
+        if (field1 in table2[0]) and (field2 in table1[0]) and (field1 not in table1[0]) and (field2 not in table2[0]):
+            fieldAux = field1
+            field1 = field2
+            field2 = fieldAux
+    
+        table1_key_index = table1[0].index(field1)
+        operator = condition[1]
+        table2_key_index = table2[0].index(field2)
+
+        result_table.append(table1[0] + table2[0])
+
+        for line_table1 in table1[1:]:
+            key_value = line_table1[table1_key_index]
+            matching_rows = []
+
+            for line_table2 in table2[1:]:
+                if operator == "=":
+                    if line_table2[table2_key_index] == key_value:
+                        matching_rows.append(line_table2)
+                elif operator == "<":
+                    if line_table2[table2_key_index] < key_value:
+                        matching_rows.append(line_table2)
+                elif operator == ">":
+                    if line_table2[table2_key_index] > key_value:
+                        matching_rows.append(line_table2)
+
+            if matching_rows:
+                for matching_row in matching_rows:
+                    result_table.append(line_table1 + matching_row)
+
+        return result_table
+    
+    def join(self, words, databaseName):
+        
+        fields = self.get_fields(words)
+        clauses = self.get_join_clauses(words)
+        tables = []
+
+        for field in fields:
+            file_name = 'csv/' + str(databaseName) + '/' + field.lower() + ".csv"
+            data = self.get_data(file_name)
+            tables.append(data)
+
+        result = []
+        
+        if len(clauses) == 1:
+            result = self.join_tables_using(tables[0], tables[1], clauses)
+        else:
+            result = self.join_tables_on(tables[0], tables[1], clauses)
+
+        return result
+
+    def get_fields(self, words):
+        fields_index = [i for i, word in enumerate(words) if word == 'join' or word == 'JOIN' or word == 'from' or word == 'FROM']
+
+        fields = []
+
+        for index in fields_index:
+            if index + 1 < len(words):
+                fields.append(words[index + 1])
+        
+        return fields
+
+    def get_join_clauses(self, words):
+
+        joins_index = [i for i, word in enumerate(words) if word == 'join' or word == 'JOIN']
+        valid_clauses = ['ON', 'on', 'USING', 'using']
+        clauses_index = []
+        clauses = []
+
+        for i in range(len(joins_index)):
+
+            if(i == len(joins_index) - 1):
+                end = len(words)
+            else:
+                end = joins_index[i + 1]
+
+            for j in range(joins_index[i], end):
+                if words[j] in valid_clauses:
+                    clauses_index.append(j)
+
+        for index in clauses_index:
+            if words[index] == 'using' or words[index] == 'USING':
+                clauses.append(words[index + 1])
+            else:
+                clauses.append(words[index + 1])
+                clauses.append(words[index + 2])
+                clauses.append(words[index + 3])
+
+        return clauses
