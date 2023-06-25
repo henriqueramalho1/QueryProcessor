@@ -7,7 +7,7 @@ class QueryProcessor:
 
     def processQuery(self, databaseName, query):
         words = query.replace(',', ' ').replace('(', ' ').replace(')', ' ').replace('\'', ' ').split()
-        file_name = 'csv/' + str(databaseName) + '/' + self.get_table_name(words).lower() + ".csv"
+        file_name = []
 
         if 'update' in words or 'UPDATE' in words:
             pass
@@ -18,11 +18,18 @@ class QueryProcessor:
             self.write_new_row(file_name, new_row)
 
         if 'delete' in words or 'DELETE' in words:
-            pass
+            file_name = 'csv/' + str(databaseName) + '/' + self.get_table_name(words).lower() + ".csv"
+            data = self.get_data(file_name)
+            selected_data = self.select(data, words, '*')
+            selected_data.pop(0)  # Remove linha de nomes das colunas
+            indexes = self.get_csv_rows_indexes(selected_data, file_name)
+            self.delete_rows(indexes, file_name)
 
         if 'select' in words or 'SELECT' in words:
+            file_name = 'csv/' + str(databaseName) + '/' + self.get_table_name(words).lower() + ".csv"
             data = self.get_data(file_name)
-            selected_data = self.select(data, words)
+            columns = self.get_selected_columns(words)
+            selected_data = self.select(data, words, columns)
             self.print_table(selected_data)
 
     def get_data(self, file_name):
@@ -37,7 +44,7 @@ class QueryProcessor:
 
         return data_table
 
-    def select(self, data_table, words):
+    def select(self, data_table, words, selected_columns):
         filtered_field = []
         comparison_field = []
         comparison_type = []
@@ -49,7 +56,6 @@ class QueryProcessor:
             comparison_type = self.get_comparison_type(words)
             has_where = True
 
-        columns = self.get_selected_columns(words)
         selected_data = []
 
         selected_indexes = []
@@ -57,7 +63,7 @@ class QueryProcessor:
             line_mod = []
             for j, elem in enumerate(line):
                 if i == 0:
-                    if line[j] in columns or columns[0] == '*':
+                    if line[j] in selected_columns or selected_columns[0] == '*':
                         selected_indexes.append(True)
                         line_mod.append(line[j])
                     else:
@@ -78,6 +84,31 @@ class QueryProcessor:
                 selected_data.append(line_mod)
 
         return selected_data
+
+    def delete_rows(self, indexes, file_name):
+        rows = []
+        new_rows = []
+        with open(file_name, 'r') as csvfile:
+            reader = csv.reader(csvfile, delimiter=';')
+            rows = list(reader)
+
+        for idx, row in enumerate(rows):
+            if idx + 1 not in indexes:
+                new_rows.append(row)
+
+        with open(file_name, 'w', newline='') as new_csvfile:
+            writer = csv.writer(new_csvfile, delimiter=';')
+            writer.writerows(new_rows)
+
+    def get_csv_rows_indexes(self, data, file_name):
+        indexes = []
+        with open(file_name, 'r') as csvfile:
+            reader = csv.reader(csvfile, delimiter=';')
+
+            for i, line in enumerate(reader, 1):
+                if line in data:
+                    indexes.append(i)
+        return indexes
 
     def write_new_row(self, file_name, values):
         with open(file_name, 'a', newline='') as csvfile:
@@ -111,15 +142,30 @@ class QueryProcessor:
         return -1
 
     def compare(self, field1, comparison_type, field2):
-        comp_operators = ['=', '!=', '<', '>', '<=', '>=']
-
-        logical_operators = ['or', 'OR', 'and', 'AND']
-        if comparison_type in comp_operators:
-            if comparison_type == '=':
-                comparison_type = '=='
-            result = eval(f"field1 {comparison_type} field2")
-            return result
-
+        field1 = float(field1)
+        field2 = float(field2)
+        if comparison_type == '=':
+            if field1 == field2:
+                return True
+        elif comparison_type == '!=':
+            if field1 != field2:
+                return True
+        elif comparison_type == '=':
+            if field1 == field2:
+                return True
+        elif comparison_type == '>':
+            if field1 > field2:
+                return True
+        elif comparison_type == '<':
+            if field1 < field2:
+                return True
+        elif comparison_type == '>=':
+            if field1 >= field2:
+                return True
+        elif comparison_type == '<=':
+            if field1 <= field2:
+                return True
+        return False
 
     def get_comparison_type(self,words):
         index = []
