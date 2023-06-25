@@ -55,13 +55,22 @@ class QueryProcessor:
         filtered_field = []
         comparison_field = []
         comparison_type = []
-
+        ordered_by = []
         has_where = False
+        has_order_by = False
+        order_desc = False
+
         if 'where' in words or 'WHERE' in words:
             filtered_field = self.get_filtered_column(words)
             comparison_field = self.get_comparison_field(words)
             comparison_type = self.get_comparison_type(words)
             has_where = True
+
+        if ('order' in words and 'by' in words) or ('ORDER' in words and 'BY' in words):
+            ordered_by = self.get_ordered_field(words)
+            has_order_by = True
+            if 'desc' in words or 'DESC' in words:
+                order_desc = True
 
         selected_data = []
 
@@ -82,15 +91,34 @@ class QueryProcessor:
             if has_where and i != 0:
                 column_i = self.get_column_index(filtered_field, data_table[0])
                 data1 = line[column_i]
-                # Pode ser dado avulso ou dado de um campo
-                # data2 = words[c_index]
                 data2 = comparison_field
                 if self.compare(data1, comparison_type, data2):
                     selected_data.append(line_mod)
             else:
                 selected_data.append(line_mod)
 
+        if has_order_by:
+            ordered_field_index = self.get_column_index(ordered_by, data_table[0])
+            sorted_data = sorted(selected_data[1:], key=lambda x: self.convert_type(x[ordered_field_index]), reverse= order_desc)
+            sorted_data = [selected_data[0]] + sorted_data
+            return sorted_data
+
         return selected_data
+
+    def convert_type(self, item):
+        field = item  # Index of the field to sort by (quantity in this case)
+        try:
+            field_value = float(field)  # Attempt to convert to an integer
+        except ValueError:
+            field_value = field  # Keep the value as is if it cannot be converted to an integer
+
+        return field_value
+
+    def get_ordered_field(self, words):
+        for i, word in enumerate(words):
+            if word == 'by' or word == 'BY':
+               return words[i + 1]
+
 
     def get_columns_indexes(self, columns, column_names):
         indexes = []
