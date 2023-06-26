@@ -69,7 +69,13 @@ class QueryProcessor:
         has_order_by = False
         order_desc = False
 
-        column_loaded = {column: False for column in selected_columns}
+        #Verificação de coluna ambígua
+        column_count = {column: data_table[0].count(column) for column in data_table[0]}
+
+        for selected in selected_columns:
+            if selected in column_count:
+                if column_count[selected] > 1:
+                    raise Exception()
 
         if 'where' in words:
             filtered_fields = self.get_filtered_columns(words)
@@ -98,9 +104,8 @@ class QueryProcessor:
             line_mod = []
             for j, elem in enumerate(line):
                 if i == 0:
-                    if (line[j] in selected_columns and column_loaded[line[j]] == False) or (selected_columns[0] == '*'):
+                    if (line[j] in selected_columns) or (selected_columns[0] == '*'):
                         selected_indexes.append(True)
-                        column_loaded[line[j]] = True
                         line_mod.append(line[j])
                     else:
                         selected_indexes.append(False)
