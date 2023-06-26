@@ -400,12 +400,17 @@ class QueryProcessor:
             data = self.get_data(file_name)
             tables.append(data)
 
-        result = []
-        
-        if len(clauses) == 1:
-            result = self.join_tables_using(tables[0], tables[1], clauses)
-        else:
-            result = self.join_tables_on(tables[0], tables[1], clauses)
+        result = tables[0]  # Mais de um join na query
+
+        for i in range(1, len(tables)):
+            table = tables[i]
+            clause = clauses[i-1]
+
+            if(len(clause) == 1):
+                result = self.join_tables_using(result, table, clause)
+            else:
+                result = self.join_tables_on(result, table, clause)
+            
 
         return result
 
@@ -440,10 +445,8 @@ class QueryProcessor:
 
         for index in clauses_index:
             if words[index] == 'using' or words[index] == 'USING':
-                clauses.append(words[index + 1])
+                clauses.append([words[index + 1]])
             else:
-                clauses.append(words[index + 1])
-                clauses.append(words[index + 2])
-                clauses.append(words[index + 3])
+                clauses.append([words[index + 1], words[index + 2], words[index + 3]])
 
         return clauses
