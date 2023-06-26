@@ -16,6 +16,9 @@ class DataImportMenu(State):
         if(option == "1"):
             self.app.changeState(DatabasesMenu(self.app, "MySQL"))
 
+        elif(option == "2"):
+            self.app.changeState(DatabasesMenu(self.app, "PostgreSQL"))
+
         elif(option == "3"):
             from initialmenu import InitialMenu
             self.app.changeState(InitialMenu(self.app))

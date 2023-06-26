@@ -1,6 +1,8 @@
 import mysql.connector
+import psycopg2
 import csv
 import os
+import time
 
 class DataImporter:
 
@@ -14,17 +16,34 @@ class DataImporter:
             return self.getMySQLDatabasesList()
 
     def getPostgreSQLDatabasesList(self):
-        pass
+        try:
+            db = psycopg2.connect(user="postgres", host="localhost", password="1234")
+
+        except:
+            return []
+        
+        cursor = db.cursor()
+        cursor.execute("SELECT datname FROM pg_database WHERE datistemplate = false;")
+        databases = cursor.fetchall()
+        databasesList = []
+
+        for database in databases:
+            databasesList.append(database[0])
+            
+        cursor.close()
+        db.close()
+
+        return databasesList
 
     def getMySQLDatabasesList(self):
 
         try:
-            self.db = mysql.connector.connect(user="root", host="localhost", password="1234ramalho")
+            db = mysql.connector.connect(user="root", host="localhost", password="1234")
 
         except:
             return []
 
-        cursor = self.db.cursor()
+        cursor = db.cursor()
         cursor.execute("SHOW DATABASES")
         databases = cursor.fetchall()
         databasesList = []
@@ -33,18 +52,28 @@ class DataImporter:
             databasesList.append(database[0])
             
         cursor.close()
-        self.db.close()
+        db.close()
 
         return databasesList
 
 
-    def load(self, databaseName):
-        self.db = mysql.connector.connect(user="root", host="localhost", password="1234ramalho", database=databaseName)
+    def load(self, sgbd, databaseName):
+        
+        db = -1
+        cursor = -1
+        table_names = []
 
-        cursor = self.db.cursor()
-        cursor.execute("SHOW TABLES")
+        if sgbd == "MySQL":
+            db = mysql.connector.connect(user="root", host="localhost", password="1234", database=databaseName)
+            cursor = db.cursor()
+            cursor.execute("SHOW TABLES")
+        else:
+            db = psycopg2.connect(user="postgres", host="localhost", password="1234", database=databaseName)
+            cursor = db.cursor()
+            cursor.execute("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'")
+
         table_names = [table[0] for table in cursor.fetchall()]
-
+        
         for table_name in table_names :
             cursor.execute(f"SELECT * FROM {table_name};")
             results = cursor.fetchall()
@@ -68,4 +97,4 @@ class DataImporter:
                 writer.writerows(results)
 
         cursor.close()
-        self.db.close()
+        db.close()

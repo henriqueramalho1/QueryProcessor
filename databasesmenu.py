@@ -29,6 +29,6 @@ class DatabasesMenu(State):
                 #Armazena apenas o nome do database
                 databaseName = str(databasesList[int(option) - 1])
                 databaseName = databaseName.split("-")
-                importer.load(databaseName[0])
+                importer.load(self.database, databaseName[0])
             except:
                 print("Não foi possível carregar os dados")
