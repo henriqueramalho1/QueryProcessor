@@ -12,7 +12,8 @@ class QueryProcessor:
         where_clause_index = -1
         insert_clause_index = -1
         update_clause_index = -1
-
+        or_clause_index = -1
+        and_clause_index = -1
         #Não dar lower em clausulas de where, insert e update!
 
         for i, word in enumerate(words):
@@ -22,7 +23,11 @@ class QueryProcessor:
                 insert_clause_index = i
             if word == "UPDATE" or word == "update":
                 update_clause_index = i
-            if (i == where_clause_index + 3) or (i > insert_clause_index + 3) or (i == update_clause_index + 4):
+            if word == "OR" or word == "or":
+                or_clause_index = i
+            if word == "AND" or word == "and":
+                and_clause_index = i
+            if (i == where_clause_index + 3) or (i > insert_clause_index + 3) or (i == update_clause_index + 4) or (i == or_clause_index + 3) or (i == and_clause_index + 3):
                 transformed_query.append(word)
             else:
                 transformed_query.append(word.lower())
