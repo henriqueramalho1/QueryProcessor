@@ -2,7 +2,8 @@ import mysql.connector
 import psycopg2
 import csv
 import os
-import time
+from dotenv import load_dotenv
+load_dotenv()
 
 class DataImporter:
 
@@ -17,7 +18,11 @@ class DataImporter:
 
     def getPostgreSQLDatabasesList(self):
         try:
-            db = psycopg2.connect(user="postgres", host="localhost", password="1234")
+            host = os.environ.get('HOST_POSTGRESQL')
+            user = os.environ.get('USER_POSTGRESQL')
+            port = os.environ.get('PORT_POSTGRESQL')
+            pssw= os.environ.get('PASSWORD_POSTGRESQL')
+            db = psycopg2.connect(user=user, host=host, password=pssw, port=port)
 
         except:
             return []
@@ -38,7 +43,11 @@ class DataImporter:
     def getMySQLDatabasesList(self):
 
         try:
-            db = mysql.connector.connect(user="root", host="localhost", password="1234")
+            host = os.environ.get('HOST_MYSQL')
+            user = os.environ.get('USER_MYSQL')
+            port = os.environ.get('PORT_MYSQL')
+            pssw= os.environ.get('PASSWORD_MYSQL')
+            db = mysql.connector.connect(user=user, host=host, password=pssw, port=port)
 
         except:
             return []
@@ -64,11 +73,19 @@ class DataImporter:
         table_names = []
 
         if sgbd == "MySQL":
-            db = mysql.connector.connect(user="root", host="localhost", password="1234", database=databaseName)
+            host = os.environ.get('HOST_MYSQL')
+            user = os.environ.get('USER_MYSQL')
+            port = os.environ.get('PORT_MYSQL')
+            pssw= os.environ.get('PASSWORD_MYSQL')
+            db = mysql.connector.connect(user=user, host=host, password=pssw, port=port, database=databaseName)
             cursor = db.cursor()
             cursor.execute("SHOW TABLES")
         else:
-            db = psycopg2.connect(user="postgres", host="localhost", password="1234", database=databaseName)
+            host = os.environ.get('HOST_POSTGRESQL')
+            user = os.environ.get('USER_POSTGRESQL')
+            port = os.environ.get('PORT_POSTGRESQL')
+            pssw= os.environ.get('PASSWORD_POSTGRESQL')
+            db = psycopg2.connect(user=user, host=host, password=pssw, port=port, database=databaseName)
             cursor = db.cursor()
             cursor.execute("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'")
 
@@ -78,7 +95,7 @@ class DataImporter:
             cursor.execute(f'SELECT * FROM {table_name};')
             results = cursor.fetchall()
 
-            column_names = [description[0] for description in cursor.description]
+            column_names = [description[0].lower() for description in cursor.description]
             path = "csv/" + databaseName
 
             if not os.path.exists(path) :

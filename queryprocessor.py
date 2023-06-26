@@ -7,9 +7,10 @@ class QueryProcessor:
 
     def processQuery(self, databaseName, query):
         words = query.replace(',', ' ').replace('(', ' ').replace(')', ' ').replace('\'', ' ').replace('\"', ' ').split()
+        words = [word.lower() for word in words]
         file_name = []
 
-        if 'update' in words or 'UPDATE' in words:
+        if 'update' in words:
             file_name = 'csv/' + str(databaseName) + '/' + words[1].lower() + ".csv"
             data = self.get_data(file_name)
             fields_to_update = self.get_updated_fields(words)
@@ -19,12 +20,12 @@ class QueryProcessor:
             indexes = self.get_csv_rows_indexes(selected_data, file_name)
             self.update_fields(file_name, fields_to_update_indexes, values, indexes)
 
-        if 'insert' in words or 'INSERT' in words:
+        if 'insert' in words:
             file_name = 'csv/' + str(databaseName) + '/' + self.get_insert_table(words).lower() + ".csv"
             new_row = self.get_row_values(words)
             self.write_new_row(file_name, new_row)
 
-        if 'delete' in words or 'DELETE' in words:
+        if 'delete' in words:
             file_name = 'csv/' + str(databaseName) + '/' + self.get_table_name(words).lower() + ".csv"
             data = self.get_data(file_name)
             selected_data = self.select(data, words, '*')
@@ -32,11 +33,11 @@ class QueryProcessor:
             indexes = self.get_csv_rows_indexes(selected_data, file_name)
             self.delete_rows(indexes, file_name)
 
-        if 'select' in words or 'SELECT' in words:
+        if 'select' in words:
             file_name = ''
             data = []
 
-            if 'join' in words or 'JOIN' in words:
+            if 'join' in words:
                 data = self.join(words, databaseName)
             else:
                 file_name = 'csv/' + str(databaseName) + '/' + self.get_table_name(words).lower() + ".csv"
@@ -70,7 +71,7 @@ class QueryProcessor:
 
         column_loaded = {column: False for column in selected_columns}
 
-        if 'where' in words or 'WHERE' in words:
+        if 'where' in words:
             filtered_fields = self.get_filtered_columns(words)
             comparison_fields = self.get_comparison_fields(words)
             comparison_types = self.get_comparison_types(words)
@@ -79,10 +80,10 @@ class QueryProcessor:
                 has_modifiers = True
             has_where = True
 
-        if ('order' in words and 'by' in words) or ('ORDER' in words and 'BY' in words):
+        if ('order' in words and 'by' in words):
             ordered_by = self.get_ordered_field(words)
             has_order_by = True
-            if 'desc' in words or 'DESC' in words:
+            if 'desc' in words:
                 order_desc = True
 
         if has_order_by:
@@ -143,7 +144,7 @@ class QueryProcessor:
 
     def get_ordered_field(self, words):
         for i, word in enumerate(words):
-            if word == 'by' or word == 'BY':
+            if word == 'by':
                return words[i + 1]
 
 
@@ -186,7 +187,7 @@ class QueryProcessor:
     def get_updated_fields(self, words):
         fields = []
         for i, word in enumerate(words):
-            if word == 'where' or word == 'WHERE':
+            if word == 'where':
                 return fields
             if word == '=':
                 fields.append(words[i - 1])
@@ -196,7 +197,7 @@ class QueryProcessor:
     def get_updated_values(self, words):
         values = []
         for i, word in enumerate(words):
-            if word == 'where' or word == 'WHERE':
+            if word == 'where':
                 return values
             if word == '=':
                 values.append(words[i + 1])
@@ -239,7 +240,7 @@ class QueryProcessor:
         for i, word in enumerate(words):
             if start:
                 values.append(word)
-            if word == 'values' or word == 'VALUES':
+            if word == 'values':
                 start = True
 
         return values
@@ -247,7 +248,7 @@ class QueryProcessor:
     def get_insert_table(self,words):
         index = []
         for i, word in enumerate(words):
-            if word == 'insert' or word == 'INSERT':
+            if word == 'insert':
                 index = i + 2
                 break
         return words[index]
@@ -269,35 +270,35 @@ class QueryProcessor:
     def get_comparison_modifiers(self, words):
         mods = []
         for i, word in enumerate(words):
-            if word == 'and' or word == 'AND':
+            if word == 'and':
                 mods.append(word.lower())
-            elif word == 'or' or word == 'OR':
+            elif word == 'or':
                 mods.append(word.lower())
         return mods
 
     def get_comparison_types(self,words):
         types = []
         for i, word in enumerate(words):
-            if word == 'where' or word == 'WHERE':
+            if word == 'where':
                 types.append(words[i + 2])
-            elif word == 'and' or word == 'AND' or word == 'or' or word == 'OR':
+            elif word == 'and'or word == 'or':
                 types.append(words[i + 2])
         return types
     def get_comparison_fields(self, words):
         comparisons = []
         for i, word in enumerate(words):
-            if word == 'where' or word == 'WHERE':
+            if word == 'where':
                 comparisons.append(words[i + 3])
-            elif word == 'and' or word == 'AND' or word == 'or' or word == 'OR':
+            elif word == 'and' or word == 'or':
                 comparisons.append(words[i + 3])
         return comparisons
 
     def get_filtered_columns(self, words):
         columns = []
         for i, word in enumerate(words):
-            if word == 'where' or word == 'WHERE':
+            if word == 'where':
                 columns.append(words[i + 1])
-            elif word == 'and' or word == 'AND' or word == 'or' or word == 'OR':
+            elif word == 'and' or word == 'or':
                 columns.append(words[i + 1])
         return columns
 
@@ -315,7 +316,7 @@ class QueryProcessor:
     def get_table_name(self, words):
         index = -1
         for i, word in enumerate(words):
-            if word == 'from' or word == 'FROM':
+            if word == 'from':
                 index = i + 1
                 break
 
@@ -324,7 +325,7 @@ class QueryProcessor:
     def get_selected_columns(self,words):
         columns = []
         for elem in words[1:]:
-            if elem == 'from' or elem == 'FROM':
+            if elem == 'from':
                 break
             columns.append(elem)
         return columns
@@ -417,7 +418,7 @@ class QueryProcessor:
         return result
 
     def get_fields(self, words):
-        fields_index = [i for i, word in enumerate(words) if word == 'join' or word == 'JOIN' or word == 'from' or word == 'FROM']
+        fields_index = [i for i, word in enumerate(words) if word == 'join' or word == 'from']
 
         fields = []
 
@@ -429,8 +430,8 @@ class QueryProcessor:
 
     def get_join_clauses(self, words):
 
-        joins_index = [i for i, word in enumerate(words) if word == 'join' or word == 'JOIN']
-        valid_clauses = ['ON', 'on', 'USING', 'using']
+        joins_index = [i for i, word in enumerate(words) if word == 'join']
+        valid_clauses = ['on', 'using']
         clauses_index = []
         clauses = []
 
@@ -446,7 +447,7 @@ class QueryProcessor:
                     clauses_index.append(j)
 
         for index in clauses_index:
-            if words[index] == 'using' or words[index] == 'USING':
+            if words[index] == 'using':
                 clauses.append([words[index + 1]])
             else:
                 clauses.append([words[index + 1], words[index + 2], words[index + 3]])
