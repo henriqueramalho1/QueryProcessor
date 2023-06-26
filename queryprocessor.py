@@ -68,6 +68,8 @@ class QueryProcessor:
         has_order_by = False
         order_desc = False
 
+        column_loaded = {column: False for column in selected_columns}
+
         if 'where' in words or 'WHERE' in words:
             filtered_fields = self.get_filtered_columns(words)
             comparison_fields = self.get_comparison_fields(words)
@@ -90,8 +92,9 @@ class QueryProcessor:
             line_mod = []
             for j, elem in enumerate(line):
                 if i == 0:
-                    if line[j] in selected_columns or selected_columns[0] == '*':
+                    if (line[j] in selected_columns and column_loaded[line[j]] == False) or (selected_columns[0] == '*'):
                         selected_indexes.append(True)
+                        column_loaded[line[j]] = True
                         line_mod.append(line[j])
                     else:
                         selected_indexes.append(False)
@@ -334,7 +337,7 @@ class QueryProcessor:
         table1_key_index = table1[0].index(key[0])
         table2_key_index = table2[0].index(key[0])
 
-        result_table.append(table1[0] + table2[0])
+        result_table.append(table1[0] + table2[0][0:table2_key_index] + table2[0][table2_key_index + 1:])
 
         for line_table1 in table1[1:]:
             key_value = line_table1[table1_key_index]
@@ -342,7 +345,7 @@ class QueryProcessor:
 
             for line_table2 in table2[1:]:
                 if line_table2[table2_key_index] == key_value:
-                    matching_rows.append(line_table2)
+                    matching_rows.append(line_table2[0:table2_key_index] + line_table2[table2_key_index + 1:])
 
             if matching_rows:
                 for matching_row in matching_rows:
