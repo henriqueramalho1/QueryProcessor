@@ -85,6 +85,11 @@ class QueryProcessor:
             if 'desc' in words or 'DESC' in words:
                 order_desc = True
 
+        if has_order_by:
+            ordered_field_index = self.get_column_index(ordered_by, data_table[0])
+            sorted_data = sorted(data_table[1:], key=lambda x: self.convert_type(x[ordered_field_index]), reverse= order_desc)
+            data_table = [data_table[0]] + sorted_data
+
         selected_data = []
 
         selected_indexes = []
@@ -124,12 +129,6 @@ class QueryProcessor:
                     selected_data.append(line_mod)
             else:
                 selected_data.append(line_mod)
-
-        if has_order_by:
-            ordered_field_index = self.get_column_index(ordered_by, data_table[0])
-            sorted_data = sorted(selected_data[1:], key=lambda x: self.convert_type(x[ordered_field_index]), reverse= order_desc)
-            sorted_data = [selected_data[0]] + sorted_data
-            return sorted_data
 
         return selected_data
 

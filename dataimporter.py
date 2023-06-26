@@ -75,7 +75,7 @@ class DataImporter:
         table_names = [table[0] for table in cursor.fetchall()]
         
         for table_name in table_names :
-            cursor.execute(f"SELECT * FROM {table_name};")
+            cursor.execute(f'SELECT * FROM {table_name};')
             results = cursor.fetchall()
 
             column_names = [description[0] for description in cursor.description]
