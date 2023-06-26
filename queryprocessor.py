@@ -7,7 +7,27 @@ class QueryProcessor:
 
     def processQuery(self, databaseName, query):
         words = query.replace(',', ' ').replace('(', ' ').replace(')', ' ').replace('\'', ' ').replace('\"', ' ').split()
-        words = [word.lower() for word in words]
+
+        transformed_query = []
+        where_clause_index = -1
+        insert_clause_index = -1
+        update_clause_index = -1
+
+        #Não dar lower em clausulas de where, insert e update!
+
+        for i, word in enumerate(words):
+            if word == "WHERE" or word == "where":
+                where_clause_index = i
+            if word == "INSERT" or word == "insert":
+                insert_clause_index = i
+            if word == "UPDATE" or word == "update":
+                update_clause_index = i
+            if (i == where_clause_index + 3) or (i > insert_clause_index + 3) or (i == update_clause_index + 4):
+                transformed_query.append(word)
+            else:
+                transformed_query.append(word.lower())
+
+        words = transformed_query
         file_name = []
 
         if 'update' in words:
