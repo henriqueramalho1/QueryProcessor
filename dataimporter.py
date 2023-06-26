@@ -102,11 +102,15 @@ class DataImporter:
         with open(csv_filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile, delimiter=';')
             
-            # Escrever os nomes das colunas
             writer.writerow(column_names)
-            
-            # Escrever os dados
-            writer.writerows(results)
+
+            from tablesmenu import TablesMenu
+            TablesMenu.progress_bar(0, len(results))
+
+            for i, row in enumerate(results):
+                writer.writerow(row)
+                
+                TablesMenu.progress_bar(i + 1, len(results))
 
         cursor.close()
         db.close()

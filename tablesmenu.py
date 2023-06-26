@@ -1,5 +1,6 @@
 from state import*
 from dataimporter import DataImporter
+import math
 
 class TablesMenu(State):
 
@@ -30,5 +31,11 @@ class TablesMenu(State):
                 table = str(tableList[int(option) - 1])
                 table = table.split("-")
                 importer.load(self.database, self.databaseName, table[0])
+                self.progress_bar()
             except:
-                print("Não foi possível carregar os dados")
+                pass
+
+    def progress_bar(progress, total):
+        percent = 100* (progress / float(total))
+        bar = '█' * int(percent) + '-' * (100 - int(percent))
+        print(f"\r|{bar}| {percent:.2f}%", end= "\r")
