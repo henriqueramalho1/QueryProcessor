@@ -66,11 +66,52 @@ class DataImporter:
         return databasesList
 
 
-    def load(self, sgbd, databaseName):
+    def load(self, sgbd, databaseName, table):
         
         db = -1
         cursor = -1
-        table_names = []
+
+        if sgbd == "MySQL":
+            host = os.environ.get('HOST_MYSQL')
+            user = os.environ.get('USER_MYSQL')
+            port = os.environ.get('PORT_MYSQL')
+            pssw= os.environ.get('PASSWORD_MYSQL')
+            db = mysql.connector.connect(user=user, host=host, password=pssw, port=port, database=databaseName)
+            cursor = db.cursor()
+        else:
+            host = os.environ.get('HOST_POSTGRESQL')
+            user = os.environ.get('USER_POSTGRESQL')
+            port = os.environ.get('PORT_POSTGRESQL')
+            pssw= os.environ.get('PASSWORD_POSTGRESQL')
+            db = psycopg2.connect(user=user, host=host, password=pssw, port=port, database=databaseName)
+            cursor = db.cursor()
+
+        
+        cursor.execute(f'SELECT * FROM {table};')
+        results = cursor.fetchall()
+
+        column_names = [description[0].lower() for description in cursor.description]
+        path = "csv/" + databaseName
+
+        if not os.path.exists(path) :
+            os.makedirs(path)
+
+        filename = f"{table}.csv"
+        csv_filename = path + "/" + filename
+
+        with open(csv_filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile, delimiter=';')
+            
+            # Escrever os nomes das colunas
+            writer.writerow(column_names)
+            
+            # Escrever os dados
+            writer.writerows(results)
+
+        cursor.close()
+        db.close()
+
+    def getDatabaseTableList(self, sgbd, databaseName):
 
         if sgbd == "MySQL":
             host = os.environ.get('HOST_MYSQL')
@@ -89,29 +130,4 @@ class DataImporter:
             cursor = db.cursor()
             cursor.execute("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'")
 
-        table_names = [table[0] for table in cursor.fetchall()]
-        
-        for table_name in table_names :
-            cursor.execute(f'SELECT * FROM {table_name};')
-            results = cursor.fetchall()
-
-            column_names = [description[0].lower() for description in cursor.description]
-            path = "csv/" + databaseName
-
-            if not os.path.exists(path) :
-                os.makedirs(path)
-
-            filename = f"{table_name}.csv"
-            csv_filename = path + "/" + filename
-
-            with open(csv_filename, 'w', newline='') as csvfile:
-                writer = csv.writer(csvfile, delimiter=';')
-                
-                # Escrever os nomes das colunas
-                writer.writerow(column_names)
-                
-                # Escrever os dados
-                writer.writerows(results)
-
-        cursor.close()
-        db.close()
+        return [table[0] for table in cursor.fetchall()]

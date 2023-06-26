@@ -1,6 +1,7 @@
 from state import*
 import time
 from dataimporter import DataImporter
+from tablesmenu import TablesMenu
 
 class DatabasesMenu(State):
 
@@ -26,9 +27,8 @@ class DatabasesMenu(State):
             self.app.changeState(DataImportMenu(self.app))
         else:
             try:
-                #Armazena apenas o nome do database
                 databaseName = str(databasesList[int(option) - 1])
                 databaseName = databaseName.split("-")
-                importer.load(self.database, databaseName[0])
+                self.app.changeState(TablesMenu(self.app, self.database, databaseName[0]))
             except:
-                print("Não foi possível carregar os dados")
+                pass
