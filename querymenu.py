@@ -1,5 +1,6 @@
 from state import*
 from queryprocessor import QueryProcessor
+import time
 
 class QueryMenu(State):
 
@@ -23,8 +24,8 @@ class QueryMenu(State):
                 processor = QueryProcessor(self.database)
                 try:
                     processor.processQuery(self.database, query)
-                except:
-                    pass
+                except Exception as e:
+                    print(str(e))
         
         from loadeddatabasesmenu import LoadedDatabasesMenu
         self.app.changeState(LoadedDatabasesMenu(self.app))

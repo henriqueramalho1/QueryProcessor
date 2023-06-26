@@ -75,7 +75,7 @@ class QueryProcessor:
         for selected in selected_columns:
             if selected in column_count:
                 if column_count[selected] > 1:
-                    raise Exception()
+                    raise Exception(f"Coluna {selected} ambígua!")
 
         if 'where' in words:
             filtered_fields = self.get_filtered_columns(words)
